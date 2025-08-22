@@ -826,12 +826,16 @@ Seurat_integrate <- function(
       object.list = srt_list,
       normalization.method = normalization_method,
       anchor.features = HVF,
-      verbose = FALSE
+      verbose = FALSE,
+      future.seed = TRUE
     )
     for (nm in names(FindIntegrationAnchors_params)) {
       params1[[nm]] <- FindIntegrationAnchors_params[[nm]]
     }
-    srt_anchors <- invoke_fun(.fn = Seurat::FindIntegrationAnchors, .args = params1)
+    #srt_anchors <- invoke_fun(.fn = Seurat::FindIntegrationAnchors, .args = params1)
+    srt_anchors <- do.call(Seurat::FindIntegrationAnchors, params1)
+
+
 
     log_message("Perform integration(Seurat) on the data...")
     params2 <- list(
@@ -839,12 +843,14 @@ Seurat_integrate <- function(
       new.assay.name = "Seuratcorrected",
       normalization.method = normalization_method,
       features.to.integrate = HVF,
-      verbose = FALSE
+      verbose = FALSE,
+      future.seed = TRUE
     )
     for (nm in names(IntegrateData_params)) {
       params2[[nm]] <- IntegrateData_params[[nm]]
     }
-    srtIntegrated <- invoke_fun(.fn = Seurat::IntegrateData, .args = params2)
+    #srtIntegrated <- invoke_fun(.fn = Seurat::IntegrateData, .args = params2)
+    srtIntegrated <- do.call(Seurat::IntegrateData, params2)
 
     SeuratObject::DefaultAssay(srtIntegrated) <- "Seuratcorrected"
     SeuratObject::VariableFeatures(srtIntegrated[["Seuratcorrected"]]) <- HVF
@@ -898,24 +904,28 @@ Seurat_integrate <- function(
       normalization.method = "LogNormalize",
       anchor.features = HVF,
       reduction = "rlsi",
-      verbose = FALSE
+      verbose = FALSE,
+      future.seed = TRUE
     )
     for (nm in names(FindIntegrationAnchors_params)) {
       params1[[nm]] <- FindIntegrationAnchors_params[[nm]]
     }
-    srt_anchors <- invoke_fun(.fn = Seurat::FindIntegrationAnchors, .args = params1)
+    #srt_anchors <- invoke_fun(.fn = Seurat::FindIntegrationAnchors, .args = params1)
+    srt_anchors <- do.call(Seurat::FindIntegrationAnchors,params1)
 
     log_message("Perform integration(Seurat) on the data...")
     params2 <- list(
       anchorset = srt_anchors,
       reductions = srt_merge[["lsi"]],
       new.reduction.name = "Seuratlsi",
-      verbose = FALSE
+      verbose = FALSE,
+      future.seed = TRUE
     )
     for (nm in names(IntegrateEmbeddings_params)) {
       params2[[nm]] <- IntegrateEmbeddings_params[[nm]]
     }
-    srtIntegrated <- invoke_fun(.fn = IntegrateEmbeddings, .args = params2)
+    #srtIntegrated <- invoke_fun(.fn = IntegrateEmbeddings, .args = params2)
+    srtIntegrated <- do.call(IntegrateEmbeddings, params2)
 
     if (is.null(linear_reduction_dims_use)) {
       linear_reduction_dims_use <- 2:max(srtIntegrated@reductions[[paste0(
@@ -937,7 +947,8 @@ Seurat_integrate <- function(
         k.param = neighbor_k,
         # force.recalc = TRUE,
         graph.name = paste0("Seurat_", c("KNN", "SNN")),
-        verbose = FALSE
+        verbose = FALSE,
+        future.seed = TRUE 
       )
 
       log_message(
@@ -949,7 +960,8 @@ Seurat_integrate <- function(
         algorithm = cluster_algorithm_index,
         method = "igraph",
         graph.name = "Seurat_SNN",
-        verbose = FALSE
+        verbose = FALSE,
+        future.seed = TRUE 
       )
       log_message("Reorder clusters...")
       srtIntegrated <- srt_reorder(
