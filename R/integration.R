@@ -579,7 +579,8 @@ Seurat_integrate <- function(
     FindIntegrationAnchors_params = list(),
     IntegrateData_params = list(),
     IntegrateEmbeddings_params = list(),
-    seed = 11) {
+    seed = 11,
+    BPPARAM = BiocParallel::MulticoreParam(workers = 24)) {
   if (length(linear_reduction) > 1) {
     log_message(
       "Only the first method in the 'linear_reduction' will be used.",
@@ -827,7 +828,7 @@ Seurat_integrate <- function(
       normalization.method = normalization_method,
       anchor.features = HVF,
       verbose = FALSE,
-      future.seed = TRUE
+      BPPARAM = BPPARAM
     )
     for (nm in names(FindIntegrationAnchors_params)) {
       params1[[nm]] <- FindIntegrationAnchors_params[[nm]]
@@ -843,8 +844,7 @@ Seurat_integrate <- function(
       new.assay.name = "Seuratcorrected",
       normalization.method = normalization_method,
       features.to.integrate = HVF,
-      verbose = FALSE,
-      future.seed = TRUE
+      verbose = FALSE
     )
     for (nm in names(IntegrateData_params)) {
       params2[[nm]] <- IntegrateData_params[[nm]]
@@ -904,8 +904,7 @@ Seurat_integrate <- function(
       normalization.method = "LogNormalize",
       anchor.features = HVF,
       reduction = "rlsi",
-      verbose = FALSE,
-      future.seed = TRUE
+      verbose = FALSE
     )
     for (nm in names(FindIntegrationAnchors_params)) {
       params1[[nm]] <- FindIntegrationAnchors_params[[nm]]
@@ -918,8 +917,7 @@ Seurat_integrate <- function(
       anchorset = srt_anchors,
       reductions = srt_merge[["lsi"]],
       new.reduction.name = "Seuratlsi",
-      verbose = FALSE,
-      future.seed = TRUE
+      verbose = FALSE
     )
     for (nm in names(IntegrateEmbeddings_params)) {
       params2[[nm]] <- IntegrateEmbeddings_params[[nm]]
@@ -947,8 +945,7 @@ Seurat_integrate <- function(
         k.param = neighbor_k,
         # force.recalc = TRUE,
         graph.name = paste0("Seurat_", c("KNN", "SNN")),
-        verbose = FALSE,
-        future.seed = TRUE 
+        verbose = FALSE
       )
 
       log_message(
@@ -960,8 +957,7 @@ Seurat_integrate <- function(
         algorithm = cluster_algorithm_index,
         method = "igraph",
         graph.name = "Seurat_SNN",
-        verbose = FALSE,
-        future.seed = TRUE 
+        verbose = FALSE
       )
       log_message("Reorder clusters...")
       srtIntegrated <- srt_reorder(
