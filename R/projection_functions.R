@@ -1,9 +1,9 @@
 buildReferenceFromSeurat <- function(
-    obj,
+     obj,
     assay = "RNA",
-    pca = "pca",
+    pca = ref_pca,          # 可以是 "pca" 或 "scvi"
     pca_dims = NULL,
-    harmony = "harmony",
+    harmony = ref_harmony,  # 也可以是 "scvi"
     umap = "umap") {
   if (!assay %in% c("RNA", "SCT")) {
     log_message(
