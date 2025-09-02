@@ -4,7 +4,8 @@ buildReferenceFromSeurat <- function(
     pca = ref_pca,          # 可以是 "pca" 或 "scvi"
     pca_dims = NULL,
     harmony = ref_harmony,  # 也可以是 "scvi"
-    umap = "umap") {
+    umap = "umap",
+    ref_group = ref_group) {
   if (!assay %in% c("RNA", "SCT")) {
     log_message(
       "Only supported assays are RNA or SCT.",
@@ -169,6 +170,7 @@ buildReferenceFromSeurat <- function(
   log_message("Finished nicely.")
   return(res)
 }
+
 
 
 
