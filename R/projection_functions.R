@@ -38,11 +38,14 @@ buildReferenceFromSeurat <- function(
   } else if (!is.null(group) && group %in% colnames(obj@meta.data)) {
     clusters <- obj@meta.data[[group]]
     levels <- sort(unique(clusters))
-    R <- matrix(0, nrow = nrow(obj), ncol = length(levels))
+    #R <- matrix(0, nrow = ncol(obj), ncol = length(levels))
+    R <- matrix(0, nrow = length(levels), ncol = ncol(obj))  # 行 = cluster, 列 = 细胞
     for (i in seq_along(levels)) {
-      R[clusters == levels[i], i] <- 1
+      #R[clusters == levels[i], i] <- 1
+      R[i, clusters == levels[i]] <- 1
     }
-    res$R <- Matrix(R, sparse = TRUE)
+    res$R <- Matrix::Matrix(R, sparse = TRUE)
+    #res$R <- Matrix::Matrix(R)
     log_message("Generated soft cluster assignments from ref_group")
   } else {
     res$R <- NULL
@@ -138,7 +141,8 @@ buildReferenceFromSeurat <- function(
    log_message("Calculate final L2 normalized reference centroids (Y_cos)")
    res$centroids <- Matrix::t(
      symphony:::cosine_normalize_cpp(
-       V = res$R %*% Matrix::t(res$Z_corr),
+       #V = as.matrix(t(res$R)) %*% as.matrix(Matrix::t(res$Z_corr)),
+       V = as.matrix(res$R) %*% as.matrix(Matrix::t(res$Z_corr)),
        dim = 1
      )
    )
