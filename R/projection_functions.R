@@ -31,8 +31,22 @@ buildReferenceFromSeurat <- function(
   #res$R <- Matrix::t(obj[[harmony]]@misc$R)
   #log_message("Saved soft cluster assignments")
   # Soft cluster assignments: Seurat v5 不再在 misc$R 保存
-  res$R <- NULL   # <- 修改位置：misc$R 不可用，R 设置为 NULL
-  message("⚠️ misc$R not available in Seurat v5; R set to NULL")
+  # 如果 misc$R 不存在，用 ref_group 构建 R
+  if (!is.null(obj[[harmony]]@misc$R)) {
+    res$R <- Matrix::t(obj[[harmony]]@misc$R)
+  } else if (!is.null(ref_group) && ref_group %in% colnames(obj@meta.data)) {
+    clusters <- obj@meta.data[[ref_group]]
+    levels <- sort(unique(clusters))
+    R <- matrix(0, nrow = nrow(obj), ncol = length(levels))
+    for (i in seq_along(levels)) {
+      R[clusters == levels[i], i] <- 1
+    }
+    res$R <- Matrix(R, sparse = TRUE)
+    log_message("Generated soft cluster assignments from ref_group")
+  } else {
+    res$R <- NULL
+    log_message("R is NULL, skipping centroids and cache computation", message_type = "warning")
+  }
   
   # Variable features
   var_features <- SeuratObject::VariableFeatures(obj)
@@ -155,6 +169,7 @@ buildReferenceFromSeurat <- function(
   log_message("Finished nicely.")
   return(res)
 }
+
 
 
 mapQuery <- function(
