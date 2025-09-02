@@ -179,6 +179,7 @@ RunSymphonyMap <- function(
     pca_dims = ref_pca_dims,
     harmony = ref_harmony,
     umap = ref_umap
+    group = ref_group
   )
   log_message("Run mapQuery")
   res <- mapQuery(
