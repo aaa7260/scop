@@ -1,5 +1,5 @@
 buildReferenceFromSeurat <- function(
-     obj,
+    obj,
     assay = "RNA",
     pca = ref_pca,          # 可以是 "pca" 或 "scvi"
     pca_dims = NULL,
@@ -27,31 +27,38 @@ buildReferenceFromSeurat <- function(
     SeuratObject::Embeddings(obj, pca)[, pca_dims, drop = FALSE]
   )
   log_message("Saved embeddings")
-
-  res$R <- Matrix::t(obj[[harmony]]@misc$R)
-  log_message("Saved soft cluster assignments")
-
+  
+  #res$R <- Matrix::t(obj[[harmony]]@misc$R)
+  #log_message("Saved soft cluster assignments")
+  # Soft cluster assignments: Seurat v5 不再在 misc$R 保存
+  res$R <- NULL   # <- 修改位置：misc$R 不可用，R 设置为 NULL
+  message("⚠️ misc$R not available in Seurat v5; R set to NULL")
+  
+  # Variable features
   var_features <- SeuratObject::VariableFeatures(obj)
-
+  
   if (assay == "RNA") {
     vargenes_means_sds <- data.frame(
       symbol = var_features,
       mean = Matrix::rowMeans(
-        GetAssayData5(
+        #GetAssayData5(
+        GetAssayData(
           obj,
           assay = assay,
-          layer = "data"
+          #layer = "data"
+          slot = "data"
         )[
           var_features,
         ]
       )
     )
-
+    
     vargenes_means_sds$stddev <- symphony::rowSDs(
-      A = GetAssayData5(
+      A = GetAssayData(#GetAssayData5(
         obj,
         assay = assay,
-        layer = "data"
+        #layer = "data"
+        slot = "data"
       )[var_features, ],
       row_means = vargenes_means_sds$mean
     )
@@ -59,20 +66,24 @@ buildReferenceFromSeurat <- function(
     vargenes_means_sds <- data.frame(
       symbol = var_features,
       mean = Matrix::rowMeans(
-        GetAssayData5(
+        #GetAssayData5(
+        GetAssayData(
           obj,
           assay = assay,
-          layer = "scale.data"
+          #layer = "scale.data"
+          slot = "scale.data"
         )[
           var_features,
         ]
       )
     )
     asdgc <- Matrix::Matrix(
-      GetAssayData5(
+      #GetAssayData5(
+      GetAssayData(
         obj,
         assay = assay,
-        layer = "scale.data"
+        #layer = "scale.data"
+        slot = "scale.data"
       )[var_features, ],
       sparse = TRUE
     )
@@ -81,20 +92,23 @@ buildReferenceFromSeurat <- function(
       vargenes_means_sds$mean
     )
   }
-
+  
   res$vargenes_means_sds <- vargenes_means_sds
   log_message(
     "Saved variable gene information for ",
     nrow(vargenes_means_sds),
     " genes."
   )
-
-  res$loadings <- obj[[pca]]@feature.loadings[, pca_dims, drop = FALSE]
+  
+  #res$loadings <- obj[[pca]]@feature.loadings[, pca_dims, drop = FALSE]
+  res$loadings <- SeuratObject::Loadings(obj, pca)[, pca_dims, drop = FALSE]  # <- 修改位置：v5 用 Loadings()
   log_message("Saved PCA loadings.")
-
+  
+  # Metadata
   res$meta_data <- obj@meta.data
   log_message("Saved metadata.")
-
+  
+  # UMAP model
   if (is.null(obj[[umap]]@misc$model)) {
     log_message(
       "uwot model not initialiazed in Seurat object. Please do RunUMAP with umap.method='uwot', return.model=TRUE first.",
@@ -102,20 +116,29 @@ buildReferenceFromSeurat <- function(
     )
   }
   res$umap <- obj[[umap]]@misc$model
-
+  
   ## Build Reference!
-  log_message("Calculate final L2 normalized reference centroids (Y_cos)")
-  res$centroids <- Matrix::t(
-    symphony:::cosine_normalize_cpp(
-      V = res$R %*% Matrix::t(res$Z_corr),
-      dim = 1
-    )
-  )
+  # 如果 R 不为空才计算 centroids & cache
+  if (!is.null(res$R)) {
+   log_message("Calculate final L2 normalized reference centroids (Y_cos)")
+   res$centroids <- Matrix::t(
+     symphony:::cosine_normalize_cpp(
+       V = res$R %*% Matrix::t(res$Z_corr),
+       dim = 1
+     )
+   )
   log_message("Calculate reference compression terms (Nr and C)")
   res$cache <- symphony:::compute_ref_cache(
     Rr = res$R,
     Zr = res$Z_corr
   )
+  } else {
+    res$centroids <- NULL
+    res$cache <- NULL
+    message("⚠️ R is NULL, skipping centroids and cache computation")  # <- 修改位置：跳过 centroids 和 cache
+  }
+  
+  # Set row/col names
   colnames(res$Z_orig) <- row.names(res$meta_data)
   rownames(res$Z_orig) <- paste0(
     SeuratObject::Key(
@@ -132,6 +155,7 @@ buildReferenceFromSeurat <- function(
   log_message("Finished nicely.")
   return(res)
 }
+
 
 mapQuery <- function(
     exp_query,
