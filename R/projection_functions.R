@@ -5,7 +5,7 @@ buildReferenceFromSeurat <- function(
     pca_dims = NULL,
     harmony = ref_harmony,  # 也可以是 "scvi"
     umap = "umap",
-    ref_group = ref_group) {
+    group = NULL) { 
   if (!assay %in% c("RNA", "SCT")) {
     log_message(
       "Only supported assays are RNA or SCT.",
@@ -35,8 +35,8 @@ buildReferenceFromSeurat <- function(
   # 如果 misc$R 不存在，用 ref_group 构建 R
   if (!is.null(obj[[harmony]]@misc$R)) {
     res$R <- Matrix::t(obj[[harmony]]@misc$R)
-  } else if (!is.null(ref_group) && ref_group %in% colnames(obj@meta.data)) {
-    clusters <- obj@meta.data[[ref_group]]
+  } else if (!is.null(group) && group %in% colnames(obj@meta.data)) {
+    clusters <- obj@meta.data[[group]]
     levels <- sort(unique(clusters))
     R <- matrix(0, nrow = nrow(obj), ncol = length(levels))
     for (i in seq_along(levels)) {
