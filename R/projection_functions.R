@@ -44,8 +44,9 @@ buildReferenceFromSeurat <- function(
       #R[clusters == levels[i], i] <- 1
       R[i, clusters == levels[i]] <- 1
     }
-    res$R <- Matrix::Matrix(R, sparse = TRUE)
+    #res$R <- Matrix::Matrix(R, sparse = TRUE)
     #res$R <- Matrix::Matrix(R)
+    res$R <- R
     log_message("Generated soft cluster assignments from ref_group")
   } else {
     res$R <- NULL
@@ -142,7 +143,7 @@ buildReferenceFromSeurat <- function(
    res$centroids <- Matrix::t(
      symphony:::cosine_normalize_cpp(
        #V = as.matrix(t(res$R)) %*% as.matrix(Matrix::t(res$Z_corr)),
-       V = as.matrix(res$R) %*% as.matrix(Matrix::t(res$Z_corr)),
+       V = res$R %*% Matrix::t(res$Z_corr),
        dim = 1
      )
    )
