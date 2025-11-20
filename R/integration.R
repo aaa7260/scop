@@ -1537,18 +1537,23 @@ MNN_integrate <- function(
   }
   sce_list <- lapply(
     srt_list, function(srt) {
+      counts_matrix <- GetAssayData5(
+        srt,
+        layer = "counts",
+        assay = SeuratObject::DefaultAssay(srt)
+      )
       data_matrix <- GetAssayData5(
         srt,
         layer = "data",
         assay = SeuratObject::DefaultAssay(srt)
-      )
+      )[HVF, ]
       sce <- Seurat::as.SingleCellExperiment(
         Seurat::CreateSeuratObject(
-          counts = data_matrix[HVF, ]
+          counts = counts_matrix[HVF, ]
         )
       )
-      # 强制修复 logcounts
-      SummarizedExperiment::assay(sce, "logcounts") <- as.matrix(data_matrix[HVF, ])
+      # 填充 logcounts
+      SummarizedExperiment::assay(sce, "logcounts") <- as.matrix(data_matrix)
       if (inherits(sce@assays@data$logcounts, "dgCMatrix")) {
         sce@assays@data$logcounts <- as_matrix(
           sce@assays@data$logcounts
@@ -1858,23 +1863,33 @@ fastMNN_integrate <- function(
     type <- checked[["type"]]
   }
   
-  sce_list <- lapply(srt_list, function(srt) {
-    sce <- Seurat::as.SingleCellExperiment(
-      Seurat::CreateSeuratObject(
-        counts = GetAssayData5(
-          srt,
-          layer = "data",
-          assay = SeuratObject::DefaultAssay(srt)
-        )[HVF, , drop = FALSE]
+  sce_list <- lapply(
+    srt_list, function(srt) {
+      counts_matrix <- GetAssayData5(
+        srt,
+        layer = "counts",
+        assay = SeuratObject::DefaultAssay(srt)
       )
-    )
-    # 强制修复 logcounts
-    SummarizedExperiment::assay(sce, "logcounts") <- as.matrix(data_matrix[HVF, ])
-    if (inherits(sce@assays@data$logcounts, "dgCMatrix")) {
-      sce@assays@data$logcounts <- as_matrix(sce@assays@data$logcounts)
+      data_matrix <- GetAssayData5(
+        srt,
+        layer = "data",
+        assay = SeuratObject::DefaultAssay(srt)
+      )[HVF, ]
+      sce <- Seurat::as.SingleCellExperiment(
+        Seurat::CreateSeuratObject(
+          counts = counts_matrix[HVF, ]
+        )
+      )
+      # 填充 logcounts
+      SummarizedExperiment::assay(sce, "logcounts") <- as.matrix(data_matrix)
+      if (inherits(sce@assays@data$logcounts, "dgCMatrix")) {
+        sce@assays@data$logcounts <- as_matrix(
+          sce@assays@data$logcounts
+        )
+      }
+      return(sce)
     }
-    return(sce)
-  })
+  )
   if (is.null(names(sce_list))) {
     names(sce_list) <- paste0("sce_", seq_along(sce_list))
   }
