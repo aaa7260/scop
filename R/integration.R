@@ -1544,7 +1544,7 @@ MNN_integrate <- function(
       )
       sce <- Seurat::as.SingleCellExperiment(
         Seurat::CreateSeuratObject(
-          counts = data_matrix[HVF, ]
+          logcounts = data_matrix[HVF, ]
         )
       )
       if (inherits(sce@assays@data$logcounts, "dgCMatrix")) {
@@ -1859,7 +1859,7 @@ fastMNN_integrate <- function(
   sce_list <- lapply(srt_list, function(srt) {
     sce <- Seurat::as.SingleCellExperiment(
       Seurat::CreateSeuratObject(
-        counts = GetAssayData5(
+        logcounts = GetAssayData5(
           srt,
           layer = "data",
           assay = SeuratObject::DefaultAssay(srt)
